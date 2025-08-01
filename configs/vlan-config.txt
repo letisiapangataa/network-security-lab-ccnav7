@@ -1,0 +1,105 @@
+# VLAN Configuration for Network Security Lab
+# CCNAv7 Aligned Configuration
+
+# Switch Configuration
+# ====================
+
+# Enable VTP (VLAN Trunking Protocol)
+vtp domain SECURITY_LAB
+vtp mode server
+vtp password lab123
+
+# Create VLANs
+vlan 10
+ name ADMIN_VLAN
+ exit
+
+vlan 20
+ name USER_VLAN
+ exit
+
+vlan 30
+ name DMZ_VLAN
+ exit
+
+vlan 99
+ name MANAGEMENT_VLAN
+ exit
+
+# Configure Access Ports
+# Admin VLAN (IT Department)
+interface range fastethernet 0/1-5
+ switchport mode access
+ switchport access vlan 10
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation shutdown
+ no shutdown
+ exit
+
+# User VLAN (General Users)
+interface range fastethernet 0/6-15
+ switchport mode access
+ switchport access vlan 20
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security violation restrict
+ no shutdown
+ exit
+
+# DMZ VLAN (Servers)
+interface range fastethernet 0/16-20
+ switchport mode access
+ switchport access vlan 30
+ spanning-tree portfast
+ no shutdown
+ exit
+
+# Configure Trunk Ports
+interface gigabitethernet 0/1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+ switchport trunk native vlan 99
+ no shutdown
+ exit
+
+# Management Interface
+interface vlan 99
+ ip address 192.168.99.10 255.255.255.0
+ no shutdown
+ exit
+
+ip default-gateway 192.168.99.1
+
+# Enable spanning tree
+spanning-tree mode rapid-pvst
+spanning-tree vlan 10,20,30,99 priority 24576
+
+# Security configurations
+service password-encryption
+enable secret cisco123
+username admin privilege 15 secret admin123
+
+# Console and VTY security
+line console 0
+ password console123
+ login
+ exec-timeout 5 0
+ exit
+
+line vty 0 4
+ password vty123
+ login
+ exec-timeout 10 0
+ transport input ssh
+ exit
+
+# SSH Configuration
+ip domain-name securitylab.local
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 2
+
+# Save configuration
+copy running-config startup-config

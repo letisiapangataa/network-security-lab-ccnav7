@@ -1,0 +1,168 @@
+# Network Topology Diagram (ASCII)
+# Network Security Lab - CCNAv7 Aligned
+
+```
+                                    Internet
+                                        |
+                                 [203.0.113.1]
+                                        |
+                    ┌─────────────────────────────────────┐
+                    │          pfSense Firewall          │
+                    │        203.0.113.10/24            │
+                    │     (Snort IDS Integrated)        │
+                    └─────────────────┬───────────────────┘
+                                      │ 10.0.0.1/30
+                                      │
+                                      │ 10.0.0.2/30
+                    ┌─────────────────┴───────────────────┐
+                    │         Cisco Router               │
+                    │     (Router-on-a-Stick)           │
+                    │        Gateway Device              │
+                    └─────────────────┬───────────────────┘
+                                      │ Trunk (802.1Q)
+                                      │ VLANs: 10,20,30,99
+                                      │
+                    ┌─────────────────┴───────────────────┐
+                    │       Cisco Catalyst Switch        │
+                    │      (Layer 2 Switching)           │
+                    └──┬──────────┬─────────────┬─────────┘
+                       │          │             │
+            ┌──────────┴─┐    ┌───┴────────┐   ┌┴────────────┐
+            │   VLAN 10  │    │   VLAN 20  │   │   VLAN 30   │
+            │   Admin    │    │   Users    │   │    DMZ      │
+            │192.168.10.0│    │192.168.20.0│   │192.168.30.0 │
+            │    /24     │    │    /24     │   │    /24      │
+            └─────┬──────┘    └─────┬──────┘   └──────┬──────┘
+                  │                 │                 │
+            ┌─────┴──────┐    ┌─────┴──────┐    ┌─────┴──────┐
+            │Admin PCs   │    │User PCs    │    │Web Server  │
+            │Network Mgmt│    │Department  │    │DNS Server  │
+            │Monitoring  │    │Workstations│    │File Server │
+            │Servers     │    │Printers    │    │Database    │
+            └────────────┘    └────────────┘    └────────────┘
+
+# VLAN Configuration Details:
+
+VLAN 10 - Admin Network (192.168.10.0/24)
+├── Gateway: 192.168.10.1 (Router)
+├── DHCP Pool: 192.168.10.11 - 192.168.10.100
+├── DNS Server: 192.168.10.100
+├── SIEM/Log Server: 192.168.10.101
+└── Network Admin Workstations
+
+VLAN 20 - User Network (192.168.20.0/24)  
+├── Gateway: 192.168.20.1 (Router)
+├── DHCP Pool: 192.168.20.11 - 192.168.20.200
+├── User Workstations
+├── Department Printers
+└── Shared Resources
+
+VLAN 30 - DMZ Network (192.168.30.0/24)
+├── Gateway: 192.168.30.1 (Router)
+├── Web Server: 192.168.30.10
+├── DNS Server: 192.168.30.11
+├── File Server: 192.168.30.12
+└── Database Server: 192.168.30.13
+
+VLAN 99 - Management Network (192.168.99.0/24)
+├── Gateway: 192.168.99.1 (Router)
+├── Switch Management: 192.168.99.10
+└── Router Management: 192.168.99.2
+
+# Security Zones and Trust Levels:
+
+High Trust Zone (Admin VLAN)
+├── Full network access
+├── Management privileges
+├── Monitoring capabilities
+└── Security administration
+
+Medium Trust Zone (User VLAN)
+├── Internet access
+├── DMZ web services only
+├── No inter-VLAN access
+└── Bandwidth limitations
+
+Low Trust Zone (DMZ)
+├── Limited internet access
+├── No internal network access
+├── Monitored by IDS/IPS
+└── Port forwarding for services
+
+Untrusted Zone (Internet)
+├── All traffic blocked by default
+├── Only specific services allowed
+├── Deep packet inspection
+└── Threat intelligence feeds
+
+# Traffic Flow Rules:
+
+Admin VLAN → Any: ALLOW (Full Access)
+User VLAN → Internet: ALLOW  
+User VLAN → DMZ (HTTP/HTTPS): ALLOW
+User VLAN → Admin VLAN: DENY
+User VLAN → DMZ (SSH/RDP): DENY
+DMZ → Internet (Updates): ALLOW
+DMZ → Internal VLANs: DENY
+Internet → DMZ (Web): ALLOW (with Port Forwarding)
+Internet → Internal: DENY (Default)
+```
+
+# Physical Network Layout
+
+```
+Floor Plan View:
+┌─────────────────────────────────────────────────────────────┐
+│                    Network Security Lab                     │
+│                                                             │
+│  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐  │
+│  │ Admin1  │    │ Admin2  │    │ Monitor │    │ Server  │  │
+│  │ PC      │    │ PC      │    │ Station │    │ Rack    │  │
+│  └────┬────┘    └────┬────┘    └────┬────┘    └────┬────┘  │
+│       │              │              │              │       │
+│  ┌────┴──────────────┴──────────────┴──────────────┴────┐  │
+│  │              24-Port Switch (VLAN 10)              │  │
+│  └───────────────────────┬─────────────────────────────┘  │
+│                          │ Trunk                          │
+│  ┌───────────────────────┴─────────────────────────────┐  │
+│  │            Core Cisco Catalyst Switch              │  │
+│  │              (VLANs 10,20,30,99)                  │  │
+│  └───────────────────────┬─────────────────────────────┘  │
+│                          │ Trunk to Router                │
+│  ┌───────────────────────┴─────────────────────────────┐  │
+│  │             Cisco Router (Router-on-Stick)         │  │
+│  └───────────────────────┬─────────────────────────────┘  │
+│                          │ WAN Connection                 │
+│  ┌───────────────────────┴─────────────────────────────┐  │
+│  │              pfSense Firewall                       │  │
+│  │            (IDS/IPS + NAT Gateway)                  │  │
+│  └───────────────────────┬─────────────────────────────┘  │
+│                          │ Internet                       │
+│                     ┌────┴────┐                          │
+│                     │ Modem/  │                          │
+│                     │   ISP   │                          │
+│                     └─────────┘                          │
+│                                                           │
+│  User Department Area:                                    │
+│  ┌─────────┐    ┌─────────┐    ┌─────────┐              │
+│  │ User1   │    │ User2   │    │ Printer │              │
+│  │ PC      │    │ PC      │    │ (VLAN20)│              │
+│  └────┬────┘    └────┬────┘    └────┬────┘              │
+│       │              │              │                   │
+│  ┌────┴──────────────┴──────────────┴────┐              │
+│  │         User Switch (VLAN 20)         │              │
+│  └───────────────────┬───────────────────┘              │
+│                      │ Uplink to Core                    │
+│                                                           │
+│  DMZ Server Room:                                         │
+│  ┌─────────┐    ┌─────────┐    ┌─────────┐              │
+│  │   Web   │    │   DNS   │    │Database │              │
+│  │ Server  │    │ Server  │    │ Server  │              │
+│  └────┬────┘    └────┬────┘    └────┬────┘              │
+│       │              │              │                   │
+│  ┌────┴──────────────┴──────────────┴────┐              │
+│  │          DMZ Switch (VLAN 30)         │              │
+│  └───────────────────┬───────────────────┘              │
+│                      │ Uplink to Core                    │
+└─────────────────────────────────────────────────────────────┘
+```

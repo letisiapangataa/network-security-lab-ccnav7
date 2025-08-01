@@ -1,0 +1,336 @@
+# Snort IDS Configuration for pfSense
+# Network Security Lab - CCNAv7 Aligned
+
+## Package Installation
+# Install Snort package via pfSense Package Manager
+# System -> Package Manager -> Available Packages -> Snort
+
+## Global Settings
+
+### General Settings
+- Enable Snort VRT: Yes
+- Snort Subscriber Rules: Yes (if available)
+- ETOpen Rules: Yes
+- Snort GPLv2 Rules: Yes
+- Update Interval: 12 hours
+- Remove Blocked Hosts: 24 hours
+
+### Advanced Settings
+- Startup Delay: 10 seconds
+- Log to System Log: Yes
+- Log Level: Alert
+
+## Interface Configuration
+
+### WAN Interface (em0)
+```
+Interface: WAN
+Enable: Yes
+Description: WAN Interface Monitoring
+Send Alerts to System Log: Yes
+Block Offending IPs: Yes
+Kill States on Block: Yes
+Which IP to Block: SRC
+Block IP Alias: Snort_Blocked_IPs
+Pass List: WAN_PassList
+```
+
+### DMZ Interface (em1.30)
+```
+Interface: DMZ_VLAN
+Enable: Yes  
+Description: DMZ Network Monitoring
+Send Alerts to System Log: Yes
+Block Offending IPs: Yes
+Kill States on Block: Yes
+Which IP to Block: SRC
+Block IP Alias: DMZ_Blocked_IPs
+Pass List: DMZ_PassList
+```
+
+## Rule Categories
+
+### Enabled Rule Categories for WAN
+```
+- backdoor.rules
+- bad-traffic.rules
+- blacklist.rules
+- botnet-cnc.rules
+- chat.rules
+- compromised.rules
+- ddos.rules
+- dns.rules
+- dos.rules
+- exploit.rules
+- ftp.rules
+- icmp.rules
+- imap.rules
+- info.rules
+- malware.rules
+- misc.rules
+- multimedia.rules
+- mysql.rules
+- netbios.rules
+- nntp.rules
+- oracle.rules
+- other-ids.rules
+- p2p.rules
+- policy.rules
+- pop3.rules
+- rpc.rules
+- scada.rules
+- scan.rules
+- shellcode.rules
+- smtp.rules
+- snmp.rules
+- sql.rules
+- ssh.rules
+- telnet.rules
+- tftp.rules
+- trojan.rules
+- user_agents.rules
+- virus.rules
+- voip.rules
+- web-activex.rules
+- web-attacks.rules
+- web-cgi.rules
+- web-client.rules
+- web-coldfusion.rules
+- web-frontpage.rules
+- web-iis.rules
+- web-misc.rules
+- web-php.rules
+- worm.rules
+```
+
+### Enabled Rule Categories for DMZ
+```
+- backdoor.rules
+- bad-traffic.rules
+- blacklist.rules
+- compromised.rules
+- exploit.rules
+- malware.rules
+- scan.rules
+- shellcode.rules
+- ssh.rules
+- trojan.rules
+- virus.rules
+- web-attacks.rules
+- web-cgi.rules
+- web-iis.rules
+- web-misc.rules
+- web-php.rules
+- worm.rules
+```
+
+## Custom Rules
+
+### SSH Brute Force Detection
+```
+# Detect SSH brute force attempts
+alert tcp any any -> $DMZ_NET 22 (msg:"SSH Brute Force Attempt"; flow:to_server,established; content:"SSH"; detection_filter:track by_src, count 5, seconds 60; sid:1000001; rev:1;)
+
+# Detect multiple failed SSH logins
+alert tcp any any -> $DMZ_NET 22 (msg:"Multiple SSH Connection Attempts"; flow:to_server; flags:S; threshold:type both, track by_src, count 10, seconds 60; sid:1000002; rev:1;)
+```
+
+### Web Application Attacks
+```
+# Detect SQL injection attempts
+alert tcp any any -> $DMZ_NET [80,443] (msg:"Possible SQL Injection"; flow:to_server,established; content:"union"; nocase; content:"select"; nocase; distance:0; within:100; sid:1000003; rev:1;)
+
+# Detect XSS attempts
+alert tcp any any -> $DMZ_NET [80,443] (msg:"Possible XSS Attack"; flow:to_server,established; content:"<script"; nocase; sid:1000004; rev:1;)
+
+# Detect directory traversal
+alert tcp any any -> $DMZ_NET [80,443] (msg:"Directory Traversal Attempt"; flow:to_server,established; content:"../"; sid:1000005; rev:1;)
+```
+
+### Network Scanning Detection
+```
+# Detect port scans
+alert tcp any any -> $HOME_NET any (msg:"Port Scan Detected"; flags:S; threshold:type both, track by_src, count 20, seconds 60; sid:1000006; rev:1;)
+
+# Detect ICMP sweep
+alert icmp any any -> $HOME_NET any (msg:"ICMP Sweep Detected"; itype:8; threshold:type both, track by_src, count 10, seconds 60; sid:1000007; rev:1;)
+```
+
+### Malware Communication
+```
+# Detect suspicious DNS queries
+alert udp any any -> any 53 (msg:"Suspicious DNS Query"; content:"|01 00 00 01 00 00 00 00 00 00|"; content:"microsoft"; nocase; sid:1000008; rev:1;)
+
+# Detect IRC communication (potential botnet)
+alert tcp any any -> any [6660:6669,7000] (msg:"IRC Connection Detected"; flow:to_server,established; content:"NICK"; sid:1000009; rev:1;)
+```
+
+## Pass Lists
+
+### WAN Pass List
+```
+# Trusted external IPs
+203.0.113.100/32    # External monitoring server
+203.0.113.200/32    # Backup server
+8.8.8.8/32          # Google DNS
+8.8.4.4/32          # Google DNS
+1.1.1.1/32          # Cloudflare DNS
+```
+
+### DMZ Pass List  
+```
+# Internal trusted IPs
+192.168.10.0/24     # Admin network
+192.168.30.1/32     # DMZ gateway
+192.168.30.100/32   # Monitoring server
+```
+
+## Preprocessor Configuration
+
+### HTTP Inspect
+```
+# HTTP Preprocessor settings
+ports { 80 443 8080 8443 }
+server_flow_depth 0
+client_flow_depth 0
+post_depth 0
+normalize_javascript
+normalize_utf
+```
+
+### FTP/Telnet
+```
+# FTP Preprocessor
+ports { 21 }
+bounce yes
+telnet_cmds yes
+
+# Telnet Preprocessor  
+ports { 23 }
+normalize
+ayt_attack_thresh 20
+```
+
+### SMTP
+```
+# SMTP Preprocessor
+ports { 25 587 }
+normalize all
+ignore_data
+normalize_cmds
+max_command_line_len 512
+```
+
+## Suppression Lists
+
+### False Positive Suppression
+```
+# Suppress known false positives
+suppress gen_id 1, sig_id 2100384    # ET SCAN Behavioral Unusual Port 445 traffic
+suppress gen_id 1, sig_id 2013028    # ET POLICY Dropbox.com Offsite File Backup in Use
+suppress gen_id 1, sig_id 2001219    # ET SCAN Potential SSH Scan
+```
+
+## Logging Configuration
+
+### Alert Logging
+- Log to System: Yes
+- Log Facility: LOCAL1
+- Log Priority: INFO
+- Remote Syslog: 192.168.10.100:514
+
+### Performance Statistics
+- Enable Stats Collection: Yes
+- Stats Update Interval: 60 seconds
+- Log Performance Stats: Yes
+
+## Barnyard2 Configuration
+
+### Database Logging
+```
+# MySQL Database Configuration
+Database Type: MySQL
+Database Name: snort
+Server: 192.168.10.100
+Port: 3306
+Username: snort_user
+Password: snort_password
+
+# Archive old alerts
+Archive Limit: 10000 alerts
+Archive Method: by_time
+Archive Interval: 24 hours
+```
+
+## Monitoring and Alerting
+
+### Email Alerts
+```
+SMTP Server: smtp.company.com
+SMTP Port: 587
+SMTP Auth: Yes
+Username: alerts@company.com
+Password: alertpassword
+
+# Alert thresholds
+High Priority Alerts: Immediate
+Medium Priority Alerts: Every 15 minutes
+Low Priority Alerts: Hourly summary
+```
+
+### SNMP Integration
+```
+SNMP Community: snort_monitor
+SNMP Server: 192.168.10.100
+SNMP Port: 161
+Alert OID: 1.3.6.1.4.1.2021.13.16.100
+```
+
+## Maintenance Tasks
+
+### Rule Updates
+```bash
+# Update rules manually
+/usr/local/bin/snort_check_for_rule_updates.sh
+
+# Clear blocked IPs
+pfctl -t snort2c -T flush
+
+# Restart Snort service
+/usr/local/etc/rc.d/snort.sh restart
+```
+
+### Log Rotation
+```
+# Snort log rotation configuration
+/var/log/snort/snort_*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    postrotate
+        /usr/local/etc/rc.d/snort.sh reload
+    endscript
+}
+```
+
+## Performance Tuning
+
+### Interface Buffering
+```
+# Increase interface buffers
+dev.em.0.rx_int_delay=250
+dev.em.0.rx_abs_int_delay=250
+dev.em.0.tx_int_delay=250
+dev.em.0.tx_abs_int_delay=250
+```
+
+### Snort Performance
+```
+# Snort configuration optimizations
+config max_attribute_hosts: 10000
+config max_attribute_services_per_host: 10
+config detection: search-method ac-split
+config event_queue: max_queue 8 log 3 order_events content_length
+```

@@ -1,0 +1,299 @@
+# pfSense Firewall Configuration
+# Network Security Lab - CCNAv7 Aligned
+
+## Interface Configuration
+
+### WAN Interface
+- Interface: em0
+- IPv4 Configuration Type: Static IPv4
+- IPv4 Address: 203.0.113.10/24
+- IPv4 Upstream Gateway: 203.0.113.1
+
+### LAN Interface (Internal Network)
+- Interface: em1
+- IPv4 Configuration Type: Static IPv4
+- IPv4 Address: 10.0.0.1/30
+- Description: Internal Network to Router
+
+## VLAN Configuration
+
+### VLAN 10 - Admin Network
+- Interface: em1.10
+- IPv4 Address: 192.168.10.254/24
+- Description: Admin VLAN Gateway
+
+### VLAN 20 - User Network
+- Interface: em1.20
+- IPv4 Address: 192.168.20.254/24
+- Description: User VLAN Gateway
+
+### VLAN 30 - DMZ Network
+- Interface: em1.30
+- IPv4 Address: 192.168.30.254/24
+- Description: DMZ VLAN Gateway
+
+## Firewall Rules
+
+### WAN Interface Rules
+```
+# Block RFC1918 networks from WAN
+Action: Block
+Interface: WAN
+Source: RFC1918 networks
+Destination: Any
+Description: Block private networks from WAN
+
+# Allow established and related connections
+Action: Pass
+Interface: WAN
+Source: Any
+Destination: WAN address
+Protocol: TCP/UDP
+State: Keep state
+Description: Allow established connections
+
+# Allow ICMP (for diagnostics)
+Action: Pass
+Interface: WAN
+Protocol: ICMP
+Source: Any
+Destination: WAN address
+Description: Allow ICMP for diagnostics
+```
+
+### LAN Interface Rules
+```
+# Allow all LAN to anywhere (default rule modified)
+Action: Pass
+Interface: LAN
+Source: LAN net
+Destination: Any
+Protocol: Any
+Description: Allow LAN to any
+```
+
+### Admin VLAN Rules
+```
+# Allow Admin VLAN full access
+Action: Pass
+Interface: Admin_VLAN
+Source: Admin_VLAN net
+Destination: Any
+Protocol: Any
+Description: Admin full access
+
+# Allow Admin to manage pfSense
+Action: Pass
+Interface: Admin_VLAN
+Source: Admin_VLAN net
+Destination: This firewall
+Protocol: TCP
+Port: 443, 22
+Description: Admin management access
+```
+
+### User VLAN Rules
+```
+# Block User VLAN to Admin VLAN
+Action: Block
+Interface: User_VLAN
+Source: User_VLAN net
+Destination: Admin_VLAN net
+Protocol: Any
+Description: Block User to Admin access
+
+# Block User VLAN to DMZ management
+Action: Block
+Interface: User_VLAN
+Source: User_VLAN net
+Destination: DMZ_VLAN net
+Protocol: TCP
+Port: 22, 3389, 23
+Description: Block User to DMZ management
+
+# Allow User VLAN to DMZ web services
+Action: Pass
+Interface: User_VLAN
+Source: User_VLAN net
+Destination: DMZ_VLAN net
+Protocol: TCP
+Port: 80, 443
+Description: Allow web access to DMZ
+
+# Allow User VLAN to Internet
+Action: Pass
+Interface: User_VLAN
+Source: User_VLAN net
+Destination: !RFC1918
+Protocol: Any
+Description: Allow User to Internet
+
+# Block User VLAN to pfSense management
+Action: Block
+Interface: User_VLAN
+Source: User_VLAN net
+Destination: This firewall
+Protocol: TCP
+Port: 443, 22
+Description: Block User management access
+```
+
+### DMZ VLAN Rules
+```
+# Block DMZ to internal networks
+Action: Block
+Interface: DMZ_VLAN
+Source: DMZ_VLAN net
+Destination: Admin_VLAN net, User_VLAN net
+Protocol: Any
+Description: Block DMZ to internal networks
+
+# Allow DMZ to Internet for updates
+Action: Pass
+Interface: DMZ_VLAN
+Source: DMZ_VLAN net
+Destination: !RFC1918
+Protocol: TCP
+Port: 80, 443, 53
+Description: Allow DMZ Internet access for updates
+
+# Allow DMZ DNS
+Action: Pass
+Interface: DMZ_VLAN
+Source: DMZ_VLAN net
+Destination: Any
+Protocol: UDP
+Port: 53
+Description: Allow DNS queries
+```
+
+## NAT Configuration
+
+### Outbound NAT Rules
+```
+# Admin VLAN NAT
+Interface: WAN
+Source: 192.168.10.0/24
+Translation Address: WAN address
+Description: Admin VLAN outbound NAT
+
+# User VLAN NAT
+Interface: WAN
+Source: 192.168.20.0/24
+Translation Address: WAN address
+Description: User VLAN outbound NAT
+
+# DMZ VLAN NAT
+Interface: WAN
+Source: 192.168.30.0/24
+Translation Address: WAN address
+Description: DMZ VLAN outbound NAT
+```
+
+### Port Forward Rules
+```
+# Web Server in DMZ
+Interface: WAN
+Protocol: TCP
+Destination Port: 80, 443
+Redirect Target IP: 192.168.30.10
+Redirect Target Port: 80, 443
+Description: DMZ Web Server
+
+# SSH to DMZ (Admin access only)
+Interface: WAN
+Protocol: TCP
+Source: Admin external IPs
+Destination Port: 2222
+Redirect Target IP: 192.168.30.10
+Redirect Target Port: 22
+Description: SSH to DMZ server (Admin only)
+```
+
+## Logging Configuration
+
+### System Logs
+- Log Level: Informational
+- Log Facility: Local0
+- Remote Syslog Server: 192.168.10.100:514
+
+### Firewall Logs
+- Log packets matched by rules: Enabled
+- Log packets blocked by default rule: Enabled
+- Log interface: All interfaces
+
+## Traffic Shaping
+
+### Limiter Configuration
+```
+# User VLAN Bandwidth Limit
+Name: User_Download
+Bandwidth: 10 Mbps
+Mask: Source
+
+Name: User_Upload  
+Bandwidth: 5 Mbps
+Mask: Source
+
+# Apply to User VLAN rules
+Interface: User_VLAN
+In: User_Download
+Out: User_Upload
+```
+
+## Aliases for Easier Management
+
+### IP Aliases
+```
+Name: Admin_Network
+Type: Network
+Address: 192.168.10.0/24
+
+Name: User_Network
+Type: Network
+Address: 192.168.20.0/24
+
+Name: DMZ_Network
+Type: Network
+Address: 192.168.30.0/24
+
+Name: Internal_Networks
+Type: Network
+Members: Admin_Network, User_Network
+
+Name: DMZ_WebServer
+Type: Host
+Address: 192.168.30.10
+```
+
+### Port Aliases
+```
+Name: Web_Ports
+Type: Port
+Ports: 80, 443
+
+Name: Management_Ports
+Type: Port
+Ports: 22, 23, 3389, 443
+
+Name: DNS_Ports
+Type: Port
+Ports: 53
+```
+
+## Backup Configuration
+
+### Automatic Config Backup
+- Frequency: Daily
+- Retention: 30 days
+- Location: /cf/conf/backup/
+- Encryption: Enabled
+
+### Manual Backup Commands
+```bash
+# Backup current configuration
+pfSsh.php playback gitsync
+
+# Restore from backup
+pfSsh.php playback restoreconfig /path/to/config.xml
+```

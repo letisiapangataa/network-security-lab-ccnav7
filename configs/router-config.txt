@@ -1,0 +1,120 @@
+# Router-on-a-Stick Configuration
+# CCNAv7 Network Security Lab
+
+# Basic Configuration
+hostname SecurityRouter
+enable secret cisco123
+service password-encryption
+
+# Configure Sub-interfaces for VLANs
+interface gigabitethernet 0/0
+ no shutdown
+ exit
+
+# Admin VLAN Sub-interface
+interface gigabitethernet 0/0.10
+ description Admin VLAN Interface
+ encapsulation dot1Q 10
+ ip address 192.168.10.1 255.255.255.0
+ ip helper-address 192.168.10.100
+ no shutdown
+ exit
+
+# User VLAN Sub-interface  
+interface gigabitethernet 0/0.20
+ description User VLAN Interface
+ encapsulation dot1Q 20
+ ip address 192.168.20.1 255.255.255.0
+ ip helper-address 192.168.10.100
+ no shutdown
+ exit
+
+# DMZ VLAN Sub-interface
+interface gigabitethernet 0/0.30
+ description DMZ VLAN Interface
+ encapsulation dot1Q 30
+ ip address 192.168.30.1 255.255.255.0
+ no shutdown
+ exit
+
+# Management VLAN Sub-interface
+interface gigabitethernet 0/0.99
+ description Management VLAN Interface
+ encapsulation dot1Q 99 native
+ ip address 192.168.99.1 255.255.255.0
+ no shutdown
+ exit
+
+# WAN Interface (to pfSense)
+interface gigabitethernet 0/1
+ description WAN Interface to pfSense
+ ip address 10.0.0.2 255.255.255.252
+ no shutdown
+ exit
+
+# Static Routes
+ip route 0.0.0.0 0.0.0.0 10.0.0.1
+
+# Access Control Lists (ACLs)
+# Deny inter-VLAN communication except for specific services
+access-list 110 permit ip 192.168.10.0 0.0.0.255 any
+access-list 110 deny ip 192.168.20.0 0.0.0.255 192.168.10.0 0.0.0.255
+access-list 110 deny ip 192.168.20.0 0.0.0.255 192.168.30.0 0.0.0.255
+access-list 110 permit tcp 192.168.20.0 0.0.0.255 192.168.30.0 0.0.0.255 eq 80
+access-list 110 permit tcp 192.168.20.0 0.0.0.255 192.168.30.0 0.0.0.255 eq 443
+access-list 110 permit ip any any
+
+# Apply ACL to User VLAN
+interface gigabitethernet 0/0.20
+ ip access-group 110 in
+ exit
+
+# DHCP Configuration
+ip dhcp excluded-address 192.168.10.1 192.168.10.10
+ip dhcp excluded-address 192.168.20.1 192.168.20.10
+ip dhcp excluded-address 192.168.30.1 192.168.30.10
+
+ip dhcp pool ADMIN_POOL
+ network 192.168.10.0 255.255.255.0
+ default-router 192.168.10.1
+ dns-server 8.8.8.8 8.8.4.4
+ domain-name admin.securitylab.local
+ lease 7
+ exit
+
+ip dhcp pool USER_POOL
+ network 192.168.20.0 255.255.255.0
+ default-router 192.168.20.1
+ dns-server 8.8.8.8 8.8.4.4
+ domain-name user.securitylab.local
+ lease 1
+ exit
+
+# Logging and SNMP
+logging buffered 64000
+logging console warnings
+logging monitor warnings
+logging 192.168.10.100
+
+snmp-server community public RO
+snmp-server community private RW
+snmp-server location "Security Lab"
+snmp-server contact "Network Admin"
+
+# SSH Configuration
+ip domain-name securitylab.local
+crypto key generate rsa modulus 2048
+ip ssh version 2
+
+# VTY Lines
+line vty 0 4
+ transport input ssh
+ login local
+ exec-timeout 10 0
+ exit
+
+# Create local user
+username admin privilege 15 secret admin123
+
+# Save configuration
+copy running-config startup-config

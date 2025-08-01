@@ -1,0 +1,149 @@
+# Security Architecture Diagram
+# Network Security Lab - Defense in Depth Model
+
+```
+                              Internet Threats
+                                     ↓
+    ┌─────────────────────────────────────────────────────────────┐
+    │                    Layer 7: Policies                       │
+    │  • Security Awareness Training                             │
+    │  • Incident Response Procedures                            │
+    │  • Acceptable Use Policies                                 │
+    └─────────────────────────────────────────────────────────────┘
+                                     ↓
+    ┌─────────────────────────────────────────────────────────────┐
+    │              Layer 6: Physical Security                    │
+    │  • Locked server room • Access control cards              │
+    │  • Security cameras  • Environmental monitoring           │
+    └─────────────────────────────────────────────────────────────┘
+                                     ↓
+    ┌─────────────────────────────────────────────────────────────┐
+    │                Layer 5: Perimeter                         │
+    │           ┌─────────────────────────────────────┐          │
+    │           │          pfSense Firewall           │          │
+    │           │     ┌─────────────────────────┐     │          │
+    │           │     │     Snort IDS/IPS       │     │          │
+    │           │     │   • Signature Detection │     │          │
+    │           │     │   • Behavioral Analysis │     │          │
+    │           │     │   • Real-time Blocking  │     │          │
+    │           │     └─────────────────────────┘     │          │
+    │           │   • Stateful Packet Filtering       │          │
+    │           │   • NAT/PAT Translation             │          │
+    │           │   • VPN Termination                 │          │
+    │           └─────────────────────────────────────┘          │
+    └─────────────────────────────────────────────────────────────┘
+                                     ↓
+    ┌─────────────────────────────────────────────────────────────┐
+    │              Layer 4: Network Segmentation                 │
+    │                                                             │
+    │    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐   │
+    │    │   VLAN 10   │    │   VLAN 20   │    │   VLAN 30   │   │
+    │    │    Admin    │    │   Users     │    │     DMZ     │   │
+    │    │             │    │             │    │             │   │
+    │    │   Trust:    │    │   Trust:    │    │   Trust:    │   │
+    │    │    HIGH     │    │   MEDIUM    │    │     LOW     │   │
+    │    │             │    │             │    │             │   │
+    │    │ ┌─────────┐ │    │ ┌─────────┐ │    │ ┌─────────┐ │   │
+    │    │ │   ACLs  │ │    │ │   ACLs  │ │    │ │   ACLs  │ │   │
+    │    │ │ • Allow │ │    │ │ • Block │ │    │ │ • Block │ │   │
+    │    │ │   All   │ │    │ │ Inter-  │ │    │ │Internal │ │   │
+    │    │ │ Traffic │ │    │ │ VLAN    │ │    │ │ Access  │ │   │
+    │    │ └─────────┘ │    │ └─────────┘ │    │ └─────────┘ │   │
+    │    └─────────────┘    └─────────────┘    └─────────────┘   │
+    └─────────────────────────────────────────────────────────────┘
+                                     ↓
+    ┌─────────────────────────────────────────────────────────────┐
+    │                Layer 3: Host Security                      │
+    │                                                             │
+    │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
+    │  │Admin Hosts  │    │ User Hosts  │    │DMZ Servers  │     │
+    │  │             │    │             │    │             │     │
+    │  │• Antivirus  │    │• Antivirus  │    │• Hardened   │     │
+    │  │• Host FW    │    │• Host FW    │    │  OS Config  │     │
+    │  │• Encryption │    │• Limited    │    │• Service    │     │
+    │  │• Monitoring │    │  Privileges │    │  Isolation  │     │
+    │  │• Backups    │    │• Updates    │    │• Log        │     │
+    │  │             │    │             │    │  Monitoring │     │
+    │  └─────────────┘    └─────────────┘    └─────────────┘     │
+    └─────────────────────────────────────────────────────────────┘
+                                     ↓
+    ┌─────────────────────────────────────────────────────────────┐
+    │              Layer 2: Application Security                 │
+    │                                                             │
+    │  • Input Validation           • Secure Coding Practices     │
+    │  • Authentication Controls    • Regular Security Updates    │
+    │  • Authorization Mechanisms   • Vulnerability Scanning     │
+    │  • Session Management         • Penetration Testing        │
+    └─────────────────────────────────────────────────────────────┘
+                                     ↓
+    ┌─────────────────────────────────────────────────────────────┐
+    │                Layer 1: Data Security                      │
+    │                                                             │
+    │  • Encryption at Rest         • Data Classification        │
+    │  • Encryption in Transit      • Access Controls            │
+    │  • Database Security          • Data Loss Prevention       │
+    │  • Backup Encryption          • Audit Trails               │
+    └─────────────────────────────────────────────────────────────┘
+
+# Traffic Flow Security Matrix
+
+┌──────────────┬─────────┬─────────┬─────────┬──────────┬──────────┐
+│    Source    │  Admin  │  User   │   DMZ   │ Internet │ pfSense  │
+│ Destination  │ VLAN10  │ VLAN20  │ VLAN30  │   WAN    │ Firewall │
+├──────────────┼─────────┼─────────┼─────────┼──────────┼──────────┤
+│ Admin VLAN10 │ ALLOW   │  DENY   │  DENY   │   DENY   │  ALLOW   │
+│ User VLAN20  │ ALLOW   │ ALLOW   │  DENY   │   DENY   │   DENY   │
+│ DMZ VLAN30   │ ALLOW   │HTTP/HTTPS│ ALLOW   │   DENY   │   DENY   │
+│ Internet WAN │ ALLOW   │ ALLOW   │ LIMITED │    -     │    -     │
+│ pfSense FW   │ ALLOW   │  DENY   │  DENY   │   DENY   │    -     │
+└──────────────┴─────────┴─────────┴─────────┴──────────┴──────────┘
+
+# Security Controls Implementation
+
+Preventive Controls:
+├── Firewall Rules (pfSense)
+├── Access Control Lists (Router)
+├── VLAN Segmentation (Switch)
+├── Strong Authentication
+├── Input Validation
+└── Encryption
+
+Detective Controls:
+├── Intrusion Detection System (Snort)
+├── Log Monitoring (Syslog)
+├── Network Traffic Analysis
+├── File Integrity Monitoring
+├── Behavioral Analysis
+└── Vulnerability Scanning
+
+Corrective Controls:
+├── Incident Response Procedures
+├── Automatic Threat Blocking
+├── System Patching
+├── Configuration Management
+├── Backup and Recovery
+└── Forensic Analysis
+
+# Monitoring and Logging Architecture
+
+                    ┌─────────────────────┐
+                    │   SIEM Platform     │
+                    │  (Log Aggregation)  │
+                    │   192.168.10.100    │
+                    └─────────┬───────────┘
+                              │
+            ┌─────────────────┼─────────────────┐
+            │                 │                 │
+    ┌───────▼────────┐ ┌─────▼──────┐ ┌────────▼──────┐
+    │   pfSense      │ │   Snort    │ │   Network     │
+    │   Firewall     │ │    IDS     │ │   Devices     │
+    │    Logs        │ │   Alerts   │ │    Syslogs    │
+    └────────────────┘ └────────────┘ └───────────────┘
+            │                 │                 │
+    ┌───────▼────────┐ ┌─────▼──────┐ ┌────────▼──────┐
+    │• Connection    │ │• Signatures│ │• Authentication│
+    │  Attempts      │ │• Anomalies │ │• Configuration │
+    │• Denied Traffic│ │• Attacks   │ │• Health Status │
+    │• NAT Sessions  │ │• Malware   │ │• Performance   │
+    └────────────────┘ └────────────┘ └───────────────┘
+```
