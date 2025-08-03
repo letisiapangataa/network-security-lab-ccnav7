@@ -54,7 +54,7 @@ This lab simulates a secure enterprise network with:
 
 ## Network Diagram
 
-![VLAN Topology](diagrams/vlan-topology.png)
+*Will add later*
 
 ---
 
@@ -77,5 +77,6 @@ MIT License
 - [Cisco CCNA Security Official Guide]
 - [pfSense Documentation](https://docs.netgate.com/pfsense/en/latest/)
 - [Wireshark User Guide](https://www.wireshark.org/docs/wsug_html_chunked/)
+
 
 
