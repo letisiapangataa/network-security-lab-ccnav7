@@ -1,4 +1,4 @@
-﻿# Network Security Lab – CCNAv7 Aligned
+﻿# Network Security Lab – CCNAv7 Aligned (Under Development 5/08)
 
 This project is a hands-on network security lab designed to simulate secure network architecture and traffic monitoring. Inspired by my networking papers taken at Auckland University of Technology, it applies foundational CCNAv7 principles in a controlled lab environment using tools such as Cisco Packet Tracer, pfSense, and Wireshark.
 
@@ -77,6 +77,7 @@ MIT License
 - [Cisco CCNA Security Official Guide]
 - [pfSense Documentation](https://docs.netgate.com/pfsense/en/latest/)
 - [Wireshark User Guide](https://www.wireshark.org/docs/wsug_html_chunked/)
+
 
 
 
