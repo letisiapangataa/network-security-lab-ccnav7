@@ -12,7 +12,7 @@ This lab demonstrates key concepts in network segmentation, perimeter defense, a
 
 ## Network Security Lab Topology (CCNAv7) Architecture
 
-<img width="669" height="366" alt="image" src="network-security-lab-diagram.drawio.png" />
+<img alt="image" src="network-security-lab-diagram.drawio.png" />
 
 
 ---
