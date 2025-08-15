@@ -1,6 +1,8 @@
 ﻿# 🔒 Network Security Lab – CCNAv7 Aligned (ALP)
 
-A hands-on network security lab designed to simulate secure network architecture and traffic monitoring. Inspired by my networking papers taken at Auckland University of Technology, it applies foundational CCNAv7 principles in a controlled lab environment using tools such as Cisco Packet Tracer, pfSense, and Wireshark. This lab demonstrates key concepts in network segmentation, perimeter defense, and security monitoring. It is designed to enhance both practical and theoretical understanding of network security in line with CCNA enterprise-level topics.
+A hands-on network security lab designed to simulate secure network architecture and traffic monitoring. Inspired by my networking papers taken at Auckland University of Technology, it applies foundational CCNAv7 principles in a controlled lab environment using tools such as Cisco Packet Tracer, pfSense, and Wireshark. 
+
+This lab demonstrates key concepts in network segmentation, perimeter defense, and security monitoring. It is designed to enhance both practical and theoretical understanding of network security in line with CCNA enterprise-level topics.
 
 ---
 
@@ -69,7 +71,6 @@ MIT License
 
 ## References
 
-- [Cisco CCNA Security Official Guide]
 - [pfSense Documentation](https://docs.netgate.com/pfsense/en/latest/)
 - [Wireshark User Guide](https://www.wireshark.org/docs/wsug_html_chunked/)
 
@@ -79,4 +80,5 @@ MIT License
 
 
 This project was developed using a combination of publicly available learning resources, reference books, open source projects, and artificial intelligence tools. All efforts have been made to attribute and comply with relevant licenses. Contributions and insights from the broader open source and educational communities are gratefully acknowledged. This software is provided as-is, without warranty of any kind, express or implied. The author assumes no responsibility for any loss, damage, or disruption caused by the use of this code. It is intended for educational and experimental purposes only and may not be suitable for production environments.
+
 
